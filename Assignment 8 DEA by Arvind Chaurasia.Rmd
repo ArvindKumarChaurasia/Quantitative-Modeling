@@ -1,0 +1,399 @@
+---
+title: "Assignment 8 DEA by Arvind Chaurasia"
+output: html_document
+date: "2023-10-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+***Special Thanks to Professor Dr. Dambar Uprety for always providing valuable insight and guidance. This assignment was completed and uploaded by Arvind Chaurasia. (Email id: achauras@kent.edu). ***
+
+Hope Valley Health Care Association.
+
+The Hope Valley Health Care Association owns and operates six nursing homes in adjoining states. An evaluation of their efficiency has been undertaken using two inputs and two outputs. The inputs are staffing labor (measured in average hours per day) and the cost of supplies (in thousands of dollars per day). The outputs are the number of patient-days reimbursed by third- party sources and the number of patient-days reimbursed privately. A summary of performance data is shown in the table below:
+
+```{r}
+#install.packages("Benchmarking")
+suppressMessages(library(Benchmarking))
+library(knitr)
+library(kableExtra)
+
+data <- data.frame(
+  DMU = c("Facility 1", "Facility 2","Facility 3","Facility 4","Facility 5","Facility 6"),
+  Staff_Hours_Per_Day = c(100,300,320,500,350,340),
+  Supplies_Per_Day = c(0.3,0.6,1.2,2,1.4,0.7),
+  Reimbursed_Patient_Days = c(15000, 15000, 40000, 28000, 20000, 14000),
+  Privately_Paid_Patient_Days = c(3500, 20000, 11000, 42000, 25000, 15000)
+)
+
+Question_Table <- kable(data, "html") %>%
+  kable_styling("striped") %>%
+  kable_classic(full_width = FALSE) %>%
+  column_spec(1, bold = TRUE)
+
+Question_Table
+```
+**Question 1. Formulate and perform DEA analysis under all DEA assumptions of FDH, CRS, VRS, IRS, DRS, and FRH.**
+
+**Answer 1**
+```{r}
+#Adding the value of variables provided in the question. In order to solve our problem further. 
+
+x <- matrix(c(100,300,320,500,350,340,
+              0.3,0.6,1.2,2,1.4,0.7), ncol = 2)
+y <- matrix(c(15000,15000,40000,28000,20000,14000,
+              3500,20000,11000,42000,25000,15000), ncol = 2)
+colnames(x) <- c("Staff hours per day", "Supplies per day")
+colnames(y) <- c("Reimbursed patient days", "Privately paid patient days")
+
+```
+**Let's perform DEA analysis under all DEA assumptions of FDH, CRS, VRS, IRS, DRS, and FRH.**
+
+DEA provides a very efficient method for benchmarking and performance evaluation. It is equally important to make appropriate assumption based upon the charecterstic of the Facilities (DMU's) and the context of our analysis. 
+
+```{r}
+#1. FDH
+e1 <- dea(x,y,RTS="fdh")
+e1
+```
+Free Disposability Hull (FDH) assume that the possibility of producing additional outputs from unused inputs, even if a DMU / facility is already efficient.
+
+```{r}
+#2. CRS
+e2 <- dea(x,y,RTS="crs")
+e2
+```
+CRS assumes that a proportional increase in inputs results in a proportional increase in outputs. The function returns efficiency scores for each DMU / facility based on the CRS assumption.
+
+When we use dea(x, y, RTS=“crs”), the CRS assumption is applied, which means that the scale of production does not affect the efficiency. Each DMU is operating at an optimal scale. We receive non-unity efficiency scores because DMUs may have different levels of input and output, and CRS allows for variations.
+
+```{r}
+#3. VRS
+e3 <- dea(x,y,RTS="vrs")
+e3
+```
+VRS assumes that not all DMUs operate at their optimal scale. Some may experience increasing returns to scale, while others may have decreasing returns to scale.
+
+Efficiency scores will not necessarily be equal to 1, as DMUs may have varying levels of input and output, and VRS allows for the adjustment of scale to improve efficiency.
+```{r}
+#4. IRS
+e4 <- dea(x,y,RTS="irs")
+e4
+```
+IRS assumes that DMUs become more efficient as they increase the scale of their operations.
+
+Efficiency scores may be less than 1 because the assumption is that larger scale operations can result in improved efficiency.
+```{r}
+#5. DRS
+e5 <- dea(x,y,RTS="drs")
+e5
+```
+DRS assumes that DMUs become less efficient as they scale up their operations.
+
+Efficiency scores might be less than 1, as DRS acknowledges that changing the scale of operations can affect efficiency.
+```{r}
+#6. FRH
+e6 <- dea(x,y,RTS="add")
+e6
+```
+FRH assumes that any DMU's technology is replicable, meaning that the outputs produced by one DMU can be reproduced by another DMU using the same inputs.
+
+Efficiency scores are based on the concept of whether other DMUs can replicate the technology to achieve similar outputs with the same inputs.
+
+---
+
+**Question 2. Determine the Peers and Lambdas under each of the above assumptions**
+
+**Answer 2**
+
+Peer groups are sets of other DMUs that are considered efficient when evaluating a specific DMU. In other words, it shows which DMUs are considered benchmarks for each DMU.
+```{r}
+#Let us determine the Peers and Lambdas under each of the assumptions we made in above question.
+
+#1. FDH
+peers(e1)
+lambda(e1)
+```
+It is important to note that FDH identifies the "best practice frontier" or the most efficient frontier without explicitly comparing DMUs to one another. As we see that efficiency of all facility is equal to 1 except facility 6 which is 0.8824. For Facility 6 (F6), we got its peer as Facility 2 (F2). 
+
+**Interpretation of Lamda values**
+
+A DMU / Facility is considered efficient when its overall efficiency score equals 1. If the overall efficiency score is less than 1, it indicates that the DMU / Facility has room for improvement in its resource utilization and/or output production. Facility 6 is inefficient and deviates from the efficient frontier. The degree of deviation from the efficient frontier is indicated by the value of lamda. 
+
+```{r}
+#2. CRS
+peers(e2)
+lambda(e2)
+```
+**Interpretation of lambda**
+
+The lamda value represent the degree to which a particular particular DMU / Facility learns from its peers. Facility 3 learns from two of its peers, Facility 1 (\(L_{1}\)) and Facility 4 (\(L_{4}\)). The lambda values for (\(L_{1}\)) and (\(L_{4}\)) in this row indicate the degree to which Facility 3, learns from these peers. 
+
+Inefficiency of Facility 5 = 1- 0.8793 = 0.1207. Facility 3 can reduce this 12% of inefficiency by learning from its peers Facility 1 and Facility 4. Facility 3 will learn 0.1207 * (40/51) = 0.0946 (that is 9.4 %) from Facility 1 and 0.1207 * (11/51) = 0.0260 (that is 2.6%) from Facility 4.
+
+Similarly, we can find the inefficiency for Facility 5 and Facility 6. Here looking at the peers result, we can say that Facility 5 will learn from facility 1 and Facility 4. Further, Facility 6 will learn from peers Facility 1 and Facility 2. 
+
+```{r}
+#3. VRS
+peers(e3)
+lambda(e3)
+```
+**Interpretation of lambda**
+
+In the VRS model, lambda represents the efficiency score adjusted for scale efficiency. A lambda value less than 1 indicates inefficiency and the degree of inefficiency. However, VRS separates the inefficiency into two components: pure technical inefficiency (PTI) and scale inefficiency (SI).
+
+
+
+```{r}
+#4. IRS
+peers(e4)
+lambda(e4)
+```
+**Interpretation of lambda**
+
+Lambda represents the efficiency score.Lamda value of 1 means the DMU is operating efficiently, but it also suggests that the DMU is subject to increasing returns to scale, meaning that an increase in inputs leads to a more than proportional increase in outputs.
+
+```{r}
+#5. DRS
+peers(e5)
+lambda(e5)
+```
+**Interpretation of lambda**
+
+Lambda represents the efficiency score.Lamda value of 1 means the DMU is operating efficiently, but it also suggests that the DMU is subject to decreasing returns to scale, meaning that an increase in inputs leads to a less than proportional increase in outputs.
+
+```{r}
+#6. FRH
+peers(e6)
+lambda(e6)
+```
+**Interpretation of lambda**
+
+In FRH, lambda represents the efficiency score adjusted for the ability to replicate a DMU's performance with other DMUs in the set.
+
+***It is important to note that, if lambda's value is off the frontier (whether less than or greater than 1), then the DMU is inefficient and learns from other peers to improve its efficiency.***
+
+---
+
+**Question 3. Summarize your results in a tabular format**
+
+**Answer 3**
+```{r}
+# 1. Creating a table summarizing the FDH assumption results in a tabular format. 
+results_table <- data.frame(
+  DMU = c("Facility 1", "Facility 2","Facility 3","Facility 4","Facility 5","Facility 6"),
+  Efficiency_Score = e1$eff,
+  Peer1 = peers(e1),
+  Lambda = lambda(e1)
+)
+
+kable(results_table, align = "c", caption = "FDH assumption results summary") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(1:8, width = "2cm") %>%
+  column_spec(1:8, border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "blue")
+
+# 2. Creating a table summarizing the CRS assumption results in a tabular format. 
+results_table <- data.frame(
+  DMU = c("Facility 1", "Facility 2","Facility 3","Facility 4","Facility 5","Facility 6"),
+  Efficiency_Score = e2$eff,
+  Peer1 = peers(e2)[, 1],
+  Peer2 = peers(e2)[, 2],
+  Lambda = lambda(e2)
+)
+
+kable(results_table, align = "c", caption = "CRS assumption results summary") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(1:7, width = "2cm") %>%
+  column_spec(1:7, border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "orange") 
+
+# 3. Creating a table summarizing the VRS assumption results in a tabular format. 
+results_table <- data.frame(
+  DMU = c("Facility 1", "Facility 2","Facility 3","Facility 4","Facility 5","Facility 6"),
+  Efficiency_Score = e3$eff,
+  Peer1 = peers(e3)[, 1],
+  Peer2 = peers(e3)[, 2],
+  Lambda = lambda(e3)
+)
+
+kable(results_table, align = "c", caption = "VRS assumption results summary") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(1:8, width = "2cm") %>%
+  column_spec(1:8, border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "orange") 
+
+# 4. Creating a table summarizing the IRS assumption results in a tabular format. 
+results_table <- data.frame(
+  DMU = c("Facility 1", "Facility 2","Facility 3","Facility 4","Facility 5","Facility 6"),
+  Efficiency_Score = e4$eff,
+  Peer1 = peers(e4)[, 1],
+  Peer2 = peers(e4)[, 2],
+  Lambda = lambda(e4)
+)
+
+kable(results_table, align = "c", caption = "IRS assumption results summary") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(1:7, width = "2cm") %>%
+  column_spec(1:7, border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "orange") 
+
+# 5. Creating a table summarizing the DRS assumption results in a tabular format. 
+results_table <- data.frame(
+  DMU = c("Facility 1", "Facility 2","Facility 3","Facility 4","Facility 5","Facility 6"),
+  Efficiency_Score = e5$eff,
+  Peer1 = peers(e5)[, 1],
+  Peer2 = peers(e5)[, 2],
+  Lambda = lambda(e5)
+)
+
+kable(results_table, align = "c", caption = "DRS assumption results summary") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(1:8, width = "2cm") %>%
+  column_spec(1:8, border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "orange") 
+
+# 6. Creating a table summarizing the FRH assumption results in a tabular format. 
+results_table <- data.frame(
+  DMU = c("Facility 1", "Facility 2","Facility 3","Facility 4","Facility 5","Facility 6"),
+  Efficiency_Score = e6$eff,
+  Peer1 = peers(e6),
+  Lambda = lambda(e6)
+)
+
+kable(results_table, align = "c", caption = "FRH assumption results summary") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  column_spec(1, bold = TRUE) %>%
+  column_spec(1:8, width = "2cm") %>%
+  column_spec(1:8, border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "blue") 
+```
+
+---
+
+**4. Compare and contrast the above results**
+
+**Answer**
+
+First, let us plot the graph for each of the assumption, we made for DEA. In order to better understand the concept of Return to scale, we will plot graph for input and output.
+```{r}
+library(RColorBrewer)
+
+dmu_names <- c("F1", "F2", "F3", "F4", "F5","F6")
+custom_colors <- brewer.pal(length(dmu_names), "Set1")
+custom_colors2 <- brewer.pal(length(dmu_names), "Set2")
+```
+In the above line of the code we have represented Facility 1 as F1. Similarly other facility are presented as F2, F3, F4, F5 and F6.
+
+Now, let us plot the graph.
+```{r}
+#1. FDH
+dea.plot(x,y,RTS= "fdh", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors)
+title(main = "DEA Analysis of Facilities for FDH")
+
+#2. CRS
+dea.plot(x,y,RTS= "crs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors)
+title(main = "DEA Analysis of Facilities for CRS")
+
+#3. VRS
+dea.plot(x,y,RTS= "vrs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors)
+title(main = "DEA Analysis of Facilities for VRS")
+
+#4. IRS
+dea.plot(x,y,RTS= "irs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors)
+title(main = "DEA Analysis of Facilities for IRS")
+
+#5. DRS
+dea.plot(x,y,RTS= "drs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors)
+title(main = "DEA Analysis of Facilities for DRS")
+
+#6. FRH
+dea.plot(x,y,RTS= "add", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors)
+title(main = "DEA Analysis of Facilities for FRH")
+```
+
+**Plot of different technologies**
+
+In economics and production theory, the concept of return to scale (RTS) is very important. This helps in understanding, how the proportionate increase in inputs (such as labor and capital) affects the proportionate increase in outputs or production. RTS assess the impact of incrase and decreas in the production process. 
+
+Usually we vary the inputs and observe the output changes, using this we can determine whether the technology exhibits increasing returns to scale (IRS), constant returns to scale (CRS), decreasing returns to scale (DRS) or varying returns to scale (VRS).
+
+**Let us make a combined plot for FDH and FRH assumption**
+
+```{r}
+dea.plot(x,y,RTS= "fdh", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors, xlab = "Input (x)", ylab = "Output (y)")
+dea.plot(x,y,RTS= "add", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors2, add = TRUE, lty = "dashed", lwd = 2)
+title(main = "Combined DEA Analysis of Facilities for assumptions FDH and FRH")
+```
+
+At the input levels of 100 and 200, both FDH and FRH are same. This means that up to these input levels,the FDH technology is able to envelope the same set of efficient decision-making units (DMUs) or facilities as the FRH. These DMUs are operating efficiently based on the criteria and assumptions of both technologies.
+
+From input levels of 200 onwards, we observe that the additive FRH consistently envelops a larger set of efficient DMUs compared to the FDH. This suggests that, beyond the 200 input level, there is a group of DMUs that the FRH identifies as efficient based on its assessment criteria but are not identified as efficient by the FDH. These DMUs may exhibit specific characteristics that align with the FRH’s more flexible and replicability-focused criteria.
+
+**Let us compare the results of different Data Envelopment Analysis (DEA) models such as CRS, VRS, IRS, and DRS**
+
+```{r}
+par(mfrow = c(2, 2))
+
+dea.plot(x,y,RTS= "crs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors, xlab = "Input (x)", ylab = "Output (y)")
+title(main = "DEA Analysis of Facilities for CRS")
+
+dea.plot(x,y,RTS= "vrs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors2, lty = "dashed", lwd = 2, xlab = "Input (x)", ylab = "Output (y)")
+title(main = "DEA Analysis of Facilities for VRS")
+
+dea.plot(x,y,RTS= "irs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors, lty = "dotted", lwd = 2, xlab = "Input (x)", ylab = "Output (y)")
+title(main = "DEA Analysis of Facilities for IRS")
+
+dea.plot(x,y,RTS= "drs", ORIENTATION="in-out",txt= dmu_names, pch = 19, col = custom_colors2, lty = "dotdash", lwd = 2, xlab = "Input (x)", ylab = "Output (y)")
+title(main = "DEA Analysis of Facilities for DRS")
+```
+
+From the above graphs, it is clear the Facility 1 is always efficient in all the assumption. 
+
+From input level 500 onwards, we can see that VRS and DRS produce same level of output. 
+
+For CRS, proportional change in inputs leads to a proportional change in outputs. In this graph we can see, how change in the value of input is effecting the value of output proportionally. 
+
+Further, in IRS, we can see that for input 100 initially we had 0 output but for the same level of input that is 100 we got a huge output, beyonf input of 100 we can say that an increase in inputs results in a more than proportional increase in outputs.
+
+In DRS graph also we can see that, after 500 input the value of output is constant, implying that an increase in inputs leads to a less than proportional increase in outputs.
+
+```{r}
+library(ggplot2)
+
+combined_eff <- cbind(e1$eff,e2$eff,e3$eff,e4$eff,e5$eff,e6$eff)
+rownames(combined_eff) <- c("Facility 1","Facility 2","Facility 3","Facility 4","Facility 5","Facility 6")
+colnames(combined_eff) <- c("FDH","CRS","VRS","IRS","DRS","FRH")
+combined_eff
+
+```
+**Now we will plot the graph for the combined efficiency from all assumption.**
+
+```{r}
+eff_data <- as.data.frame(combined_eff)
+
+eff_data$Facility <- rownames(eff_data)
+rownames(eff_data) <- NULL
+
+library(reshape2)
+eff_data_melted <- melt(eff_data, id.vars = "Facility")
+
+plot <- ggplot(eff_data_melted, aes(x = Facility, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "DEA Efficiency Scores of Facilities under different Assumptions",
+       x = "Facility", y = "Efficiency Score") +
+  scale_fill_manual(values = c("FDH" = "blue", "CRS" = "red", "VRS" = "green", "IRS" = "purple", "DRS" = "orange", "FRH" = "brown")) +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+plot + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+Hence, we can conclude that Facility 1, Facility 2 and Facility 4 are efficient in all assumption. 
