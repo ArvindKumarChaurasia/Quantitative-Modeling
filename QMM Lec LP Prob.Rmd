@@ -1,0 +1,50 @@
+---
+title: "LP model"
+output: html_document
+date: "2023-09-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+S <- 0
+C <- 0
+V <- 0
+A <- 0
+T <- 0
+```
+
+
+```{r}
+objective <- function(S,C,V,A,T) {return(-(10*S+8*C+25*V+15*A+6*T))}
+```
+```{r}
+constraint1 <- function(S,C,V,A,T) {return(50*S +100*C +120*A + 80*T >= 380)}
+constraint2 <- function(S,C,V,A,T) {return(50*S +100*C +120*A + 80*T <= 420)}
+constraint3 <- function(S,C,V,A,T) {return(-9*S +55*C -24*A + 14*T <= 0)}
+constraint4 <- function(S,C,V,A,T) {return(20*S +50*V + 2*T >= 50)}
+constraint5 <- function(S,C,V,A,T) {return(S -2*A  >= 0)}
+constraint6 <- function(S,C,V,A,T) {return(3*S +8*C +V +2*A + 25*T == 15)}
+
+library(lpSolve)
+
+# Define the LP problem
+mini_sol <- lp("max", objective, const.mat = matrix(c(50,100,0,120,80,
+                                                50,100,0,120,80,
+                                                -9,55,0,-24,14,
+                                                20,0,50,0,2,
+                                                1,0,0,-2,0,
+                                                3,8,1,2,25), ncol = 5, byrow = TRUE),const.dir = c("<=",">=","<=",">=",">=","="), const.rhs = c(380,420,0,50,0,15))
+solution <- solve(lp,sens = TRUE)
+optimal_S <- mini_sol$solution[1]
+optimal_C <- mini_sol$solution[2]
+optimal_V <- mini_sol$solution[3]
+optimal_A <- mini_sol$solution[4]
+optimal_T <- mini_sol$solution[5]
+
+cat("Optimal Objective Value:", mini_sol$objval, "\n")
+
+```
+
