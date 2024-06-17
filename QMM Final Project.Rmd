@@ -1,0 +1,453 @@
+---
+title: "Quantitative Management Modeling Final Project"
+output: html_document
+date: "2023-11-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+***We would like to express our sincere gratitude to Professor Dr. Dambar Uprety, Assistant Professor of Management and Information Systems at Kent State University, for your invaluable support, guidance, and constructive feedback throughout the duration of this project. Your insightful input and depth of knowledge greatly contributed to the successful completion of the project. We are truly thankful for the mentorship, which enhanced our understanding and skills in the Quantitative Management Modeling.***
+
+---
+
+##### Group Project By: Arvind Kumar Chaurasia, Thuy Thien Tram Nguyen, and Melona Vinolia Abel
+
+---
+
+**Question**
+
+Purpose:
+
+The primary objective of this assignment is to define, formulate, and solve a mathematical optimization model. This task aims to help you master the following module outcome: 
+
+• Integrate your learning on mathematical modeling.
+
+Directions:
+You have been assigned the task of forming groups. Consider that your class consists of 15 students, and you aim to create 5 groups, each containing 3 students. The main goal is to maximize the chance of success for each group on a class project. The requirements for forming groups are as follows: 
+
+• Divide 15 students into 5 groups of 3 members each. 
+
+• What factors affect the success of groups? Define three factors (e.g., GPA, gender, etc.) that you feel influence the contributions students make towards project success. 
+
+• Use R's randomization function to generate data for these factors. 
+
+• Record the collected data. 
+
+• Formulate a mathematical model with an objective function, constraints, and non- negativity components. 
+
+• Solve the model in R and report objective function values and decision variables. 
+
+• Provide insights in your results.
+
+---
+
+
+**Answer**
+
+First we will generate the data for 15 student. The three factors which we are considering are GPA, Attendance days and study hours by the students. 
+
+After generating the data we have taken the weighted value. We have assign GPA to be 60%, Attendance days to be 20% and study hours to be 20%, in the weighted value for each student. 
+```{r}
+# Set seed for reproducibility, this will ensure that every time we run the program we will have the same output of random value. 
+set.seed(123)
+
+# As provided in the question we will be using the total number of students as 15.
+num_students <- 15
+
+# Generating the random data for GPA, attendance days, and study hours for all 15 students.
+gpa <- round(runif(num_students, min = 2, max = 4), 2)
+attendance_days <- sample(0:20, num_students, replace = TRUE)
+study_hours <- sample(1:40, num_students, replace = TRUE) 
+
+# Now calculating the weighted average.
+weighted_average <- 0.6 * gpa + 0.2 * attendance_days + 0.2 * study_hours
+
+# Creating our data frame for the generated data and weighted average. 
+student_data <- data.frame(GPA = gpa, Attendance_Days = attendance_days, Study_Hours = study_hours, Weighted_Average = weighted_average)
+
+# Now printing the data frame.
+print(student_data)
+```
+
+---
+
+Now using the summary() function to get the descriptive statistics. Also we will be using staragazer library to create better summary table. 
+```{r}
+summary(student_data)
+
+#For Better visualization of our table we can use. 
+suppressMessages(library(stargazer))
+
+summary_table <- stargazer(student_data, type = "text")
+
+
+```
+
+---
+
+Now we will be using the cor() function to get the correlation matrix. 
+```{r}
+cor(student_data)
+```
+Since we are using the randomly generated data. We see weak negative correlation and moderate positive correlation between co-efficient between some variables. GPA has a weak negative correlation with Attendance_Days and Study_Hours. Attendance_Days and Study_Hours have a moderate positive correlation.
+
+---
+
+**Displaying our data.** 
+
+First we will draw a pie chart for GAP. This chart will show how many students are there in each range as defined below in the code.
+```{r}
+# Categorizing GPA in range of 2 to 2.5, 2.6 to 3, 3.1 to 3.5 and 3.6 to 4.
+gpa_categories <- cut(student_data$GPA, breaks = c(2, 2.5, 3, 3.5, 4), labels = c("2-2.5", "2.6-3", "3.1-3.5", "3.6-4"))
+
+# Pie Chart for GPA distribution.
+gpa_table <- table(gpa_categories)
+gpa_proportions <- prop.table(gpa_table)
+
+pie(gpa_table, main = "GPA Distribution", col = rainbow(length(levels(gpa_categories))), labels = paste0(levels(gpa_categories), "\n", round(gpa_proportions * 100, 1), "%"))
+
+# Add legend to the chart.
+legend("topright", legend = levels(gpa_categories), fill = rainbow(length(levels(gpa_categories))))
+
+```
+
+
+---
+
+Now we will be plotting the Bar diagram for Attendance Days, a graphical representation of data where individual bars represent different categories or groups, and the length of each bar corresponds to the value or frequency of the data it represents. 
+
+```{r}
+# Bar Diagram for Attendance Days
+barplot(student_data$Attendance_Days, names.arg = 1:num_students, main = "Attendance Days", xlab = "Student", ylab = "Days", col = 'lightgreen')
+
+```
+
+---
+
+Further, we will draw the histogram for the study hour distribution for all 15 students. Histogram, a graphical representation of the distribution of a dataset. It is used to visualize the underlying frequency distribution of a continuous variable. 
+
+```{r}
+
+# Histogram for Study Hours.
+hist(student_data$Study_Hours, main = "Study Hours Distribution", xlab = "Study Hours", ylab = "Frequency", col = "skyblue")
+
+```
+
+
+---
+
+**Objective Function**
+
+Our objective Function will have a total of 75 decision variables. \(s_ig_j\), where i is number of student from (1 to 15) and j is number of groups from (1 to 5).
+
+$$
+\begin{align*}
+\text{Max } Z &= 4.748(s_1g_1 + s_1g_2 + s_1g_3 + s_1g_4 + s_1g_5) \\
+&\quad + 8.748(s_2g_1 + s_2g_2 + s_2g_3 + s_2g_4 + s_2g_5) \\
+&\quad + 9.692(s_3g_1 + s_3g_2 + s_3g_3 + s_3g_4 + s_3g_5) \\
+&\quad + 4.062(s_4g_1 + s_4g_2 + s_4g_3 + s_4g_4 + s_4g_5) \\
+&\quad + 5.528(s_5g_1 + s_5g_2 + s_5g_3 + s_5g_4 + s_5g_5) \\
+&\quad + 4.454(s_6g_1 + s_6g_2 + s_6g_3 + s_6g_4 + s_6g_5) \\
+&\quad + 8.236(s_7g_1 + s_7g_2 + s_7g_3 + s_7g_4 + s_7g_5) \\
+&\quad + 9.268(s_8g_1 + s_8g_2 + s_8g_3 + s_8g_4 + s_8g_5) \\
+&\quad + 6.860(s_9g_1 + s_9g_2 + s_9g_3 + s_9g_4 + s_9g_5) \\
+&\quad + 7.746(s_{10}g_1 + s_{10}g_2 + s_{10}g_3 + s_{10}g_4 + s_{10}g_5) \\
+&\quad + 11.346(s_{11}g_1 + s_{11}g_2 + s_{11}g_3 + s_{11}g_4 + s_{11}g_5) \\
+&\quad + 12.546(s_{12}g_1 + s_{12}g_2 + s_{12}g_3 + s_{12}g_4 + s_{12}g_5) \\
+&\quad + 9.016(s_{13}g_1 + s_{13}g_2 + s_{13}g_3 + s_{13}g_4 + s_{13}g_5) \\
+&\quad + 9.890(s_{14}g_1 + s_{14}g_2 + s_{14}g_3 + s_{14}g_4 + s_{14}g_5) \\
+&\quad + 11.126(s_{15}g_1 + s_{15}g_2 + s_{15}g_3 + s_{15}g_4 + s_{15}g_5)
+\end{align*}
+$$
+
+**Constraints:**
+
+The above objective function is subject to the following group of constraints:
+
+Group Constraints:
+$$s_1g_1 + s_2g_1 + s_3g_1 + s_4g_1 + s_5g_1 + s_6g_1 + s_7g_1 + s_8g_1 + s_9g_1 + s_{10}g_1 + s_{11}g_1 + s_{12}g_1 + s_{13}g_1 + s_{14}g_1 + s_{15}g_1 = 3$$
+
+$$s_1g_2 + s_2g_2 + s_3g_2 + s_4g_2 + s_5g_2 + s_6g_2 + s_7g_2 + s_8g_2 + s_9g_2 + s_{10}g_2 + s_{11}g_2 + s_{12}g_2 + s_{13}g_2 + s_{14}g_2 + s_{15}g_2 = 3$$
+
+$$s_1g_3 + s_2g_3 + s_3g_3 + s_4g_3 + s_5g_3 + s_6g_3 + s_7g_3 + s_8g_3 + s_9g_3 + s_{10}g_3 + s_{11}g_3 + s_{12}g_3 + s_{13}g_3 + s_{14}g_3 + s_{15}g_3 = 3$$
+
+$$s_1g_4 + s_2g_4 + s_3g_4 + s_4g_4 + s_5g_4 + s_6g_4 + s_7g_4 + s_8g_4 + s_9g_4 + s_{10}g_4 + s_{11}g_4 + s_{12}g_4 + s_{13}g_4 + s_{14}g_4 + s_{15}g_4 = 3$$
+
+$$s_1g_5 + s_2g_5 + s_3g_5 + s_4g_5 + s_5g_5 + s_6g_5 + s_7g_5 + s_8g_5 + s_9g_5 + s_{10}g_5 + s_{11}g_5 + s_{12}g_5 + s_{13}g_5 + s_{14}g_5 + s_{15}g_5 = 3$$
+Student Constraints:
+
+$$s_1g_1 + s_1g_2 + s_1g_3 + s_1g_4 + s_1g_5 = 1$$
+$$s_2g_1 + s_2g_2 + s_2g_3 + s_2g_4 + s_2g_5 = 1$$
+$$ s_3g_1 + s_3g_2 + s_3g_3 + s_3g_4 + s_3g_5 = 1 $$
+$$ s_4g_1 + s_4g_2 + s_4g_3 + s_4g_4 + s_4g_5 = 1 $$
+$$ s_5g_1 + s_5g_2 + s_5g_3 + s_5g_4 + s_5g_5 = 1 $$
+$$ s_6g_1 + s_6g_2 + s_6g_3 + s_6g_4 + s_6g_5 = 1 $$
+$$ s_7g_1 + s_7g_2 + s_7g_3 + s_7g_4 + s_7g_5 = 1 $$
+$$ s_8g_1 + s_8g_2 + s_8g_3 + s_8g_4 + s_8g_5 = 1 $$
+$$ s_9g_1 + s_9g_2 + s_9g_3 + s_9g_4 + s_9g_5 = 1 $$
+$$ s_{10}g_1 + s_{10}g_2 + s_{10}g_3 + s_{10}g_4 + s_{10}g_5 = 1 $$ 
+$$ s_{11}g_1 + s_{11}g_2 + s_{11}g_3 + s_{11}g_4 + s_{11}g_5 = 1 $$
+$$ s_{12}g_1 + s_{12}g_2 + s_{12}g_3 + s_{12}g_4 + s_{12}g_5 = 1 $$
+$$ s_{13}g_1 + s_{13}g_2 + s_{13}g_3 + s_{13}g_4 + s_{13}g_5 = 1 $$
+$$ s_{14}g_1 + s_{14}g_2 + s_{14}g_3 + s_{14}g_4 + s_{14}g_5 = 1 $$
+$$ s_{15}g_1 + s_{15}g_2 + s_{15}g_3 + s_{15}g_4 + s_{15}g_5 = 1 $$
+
+GPA Constraints:
+
+$$
+\begin{align*} 
+&\quad \ 2.58s_1g_1 + 3.581s_2g_1 + 2.82s_3g_1 + 3.77s_4g_1 + 	3.88s_5g_1 \\
+&\quad + 2.09s_6g_1 + 3.06s_7g_1 + 	3.78s_8g_1 + 	3.1s_9g_1 + 2.91s_{10}g_1 \\
+&\quad + 3.91s_{11}g_1 + 2.91s_{12}g_1 + 3.36s_{13}g_1 + 3.15s_{14}g_1 + 2.2s_{15}g_1 \ge 3.141 
+\end{align*}
+$$
+$$
+\begin{align*} 
+&\quad \ 2.58s_1g_2 + 3.581s_2g_2 + 2.82s_3g_2 + 3.77s_4g_2 + 	3.88s_5g_2 \\
+&\quad + 2.09s_6g_2 + 3.06s_7g_2 + 	3.78s_8g_2 + 	3.1s_9g_2 + 2.91s_{10}g_2 \\
+&\quad + 3.91s_{11}g_2 + 2.91s_{12}g_2 + 3.36s_{13}g_2 + 3.15s_{14}g_2 + 2.2s_{15}g_2 \ge 3.141 
+\end{align*}
+$$
+$$
+\begin{align*} 
+&\quad \ 2.58s_1g_3 + 3.581s_2g_3 + 2.82s_3g_3 + 3.77s_4g_3 + 	3.88s_5g_3 \\
+&\quad + 2.09s_6g_3 + 3.06s_7g_3 + 	3.78s_8g_3 + 	3.1s_9g_3 + 2.91s_{10}g_3 \\
+&\quad + 3.91s_{11}g_3 + 2.91s_{12}g_3 + 3.36s_{13}g_3 + 3.15s_{14}g_3 + 2.2s_{15}g_3 \ge 3.141 
+\end{align*}
+$$
+$$
+\begin{align*} 
+&\quad \ 2.58s_1g_4 + 3.581s_2g_4 + 2.82s_3g_4 + 3.77s_4g_4 + 	3.88s_5g_4 \\
+&\quad + 2.09s_6g_4 + 3.06s_7g_4 + 	3.78s_8g_4 + 	3.1s_9g_4 + 2.91s_{10}g_4 \\
+&\quad + 3.91s_{11}g_4 + 2.91s_{12}g_4 + 3.36s_{13}g_4 + 3.15s_{14}g_4 + 2.2s_{15}g_4 \ge 3.141 
+\end{align*}
+$$
+
+$$
+\begin{align*} 
+&\quad \ 2.58s_1g_5 + 3.581s_2g_5 + 2.82s_3g_5 + 3.77s_4g_5 + 	3.88s_5g_5 \\
+&\quad + 2.09s_6g_5 + 3.06s_7g_5 + 	3.78s_8g_5 + 	3.1s_9g_5 + 2.91s_{10}g_5 \\
+&\quad + 3.91s_{11}g_5 + 2.91s_{12}g_5 + 3.36s_{13}g_5 + 3.15s_{14}g_5 + 2.2s_{15}g_5 \ge 3.141 
+\end{align*}
+$$
+
+Days of attendance constraints:
+
+$$
+\begin{align*} 
+&\quad \ \ 4s_1g_1 + 18s_2g_1 + 8s_3g_1 + 2s_4g_1 + 	7s_5g_1 \\
+&\quad + 6s_6g_1 + 9s_7g_1 + 	8s_8g_1 + 	18s_9g_1 + 3s_{10}g_1 \\
+&\quad + 13s_{11}g_1 + 16s_{12}g_1 + 10s_{13}g_1 + 6s_{14}g_1 + 20s_{15}g_1 \ge 9.867 
+\end{align*}
+$$
+
+$$
+\begin{align*} 
+&\quad \ 4s_1g_2 + 18s_2g_2 + 8s_3g_2 + 2s_4g_2 + 	7s_5g_2 \\
+&\quad + 6s_6g_2 + 9s_7g_2 + 	8s_8g_2 + 18s_9g_2 + 3s_{10}g_2 \\
+&\quad + 13s_{11}g_2 + 16s_{12}g_2 + 10s_{13}g_2 + 6s_{14}g_2 + 20s_{15}g_2  \ge 9.867 
+\end{align*}
+$$
+
+$$
+\begin{align*} 
+&\quad \ 4s_1g_3 + 18s_2g_3 + 8s_3g_3 + 2s_4g_3 + 7s_5g_3 \\
+&\quad + 6s_6g_3 + 9s_7g_3 + 	8s_8g_3 + 18s_9g_3 + 3s_{10}g_3 \\
+&\quad + 13s_{11}g_3 + 16s_{12}g_3 + 10s_{13}g_3 + 6s_{14}g_3 + 20s_{15}g_3 \ge 9.867 
+\end{align*}
+$$
+
+$$
+\begin{align*} 
+&\quad \ 4s_1g_4 + 18s_2g_4 + 8s_3g_4 + 2s_4g_4 + 7s_5g_4 \\
+&\quad + 6s_6g_4 + 9s_7g_4 + 8s_8g_4 + 18s_9g_4 + 3s_{10}g_4 \\
+&\quad + 13s_{11}g_4 + 16s_{12}g_4 + 10s_{13}g_4 + 6s_{14}g_4 + 20s_{15}g_4 \ge 9.867 
+\end{align*}
+$$
+
+
+$$
+\begin{align*} 
+&\quad \ 4s_1g_5 + 18s_2g_5 + 8s_3g_5 + 2s_4g_5 + 7s_5g_5 \\
+&\quad + 6s_6g_5 + 9s_7g_5 + 	8s_8g_5 + 18s_9g_5 + 3s_{10}g_5 \\
+&\quad + 13s_{11}g_5 + 16s_{12}g_5 + 10s_{13}g_5 + 6s_{14}g_5 + 20s_{15}g_5 \ge 9.867 
+\end{align*}
+$$
+
+
+Study Hours Constraints:
+$$
+\begin{align*} 
+&\quad \ 12s_1g_1 + 15s_2g_1 + 32s_3g_1 + 7s_4g_1 + 	9s_5g_1 \\
+&\quad + 10s_6g_1 + 23s_7g_1 + 	27s_8g_1 + 	7s_9g_1 + 27s_{10}g_1 \\
+&\quad + 32s_{11}g_1 + 38s_{12}g_1 + 25s_{13}g_1 + 34s_{14}g_1 + 29s_{15}g_1 \ge 21.8 
+\end{align*}
+$$
+$$
+\begin{align*} 
+&\quad \ 12s_1g_2 + 15s_2g_2 + 32s_3g_2 + 7s_4g_2 + 9s_5g_2 \\
+&\quad + 10s_6g_2 + 23s_7g_2 + 27s_8g_2 + 7s_9g_2 + 27s_{10}g_2 \\
+&\quad + 32s_{11}g_2 + 38s_{12}g_2 + 25s_{13}g_2 + 34s_{14}g_2 + 29s_{15}g_2 \ge 21.8 
+\end{align*}
+$$
+$$
+\begin{align*} 
+&\quad \ 12s_1g_3 + 15s_2g_3 + 32s_3g_3 + 7s_4g_3 + 9s_5g_3 \\
+&\quad + 10s_6g_3 + 23s_7g_3 + 27s_8g_3 + 7s_9g_3 + 27s_{10}g_3 \\
+&\quad + 32s_{11}g_3 + 38s_{12}g_3 + 25s_{13}g_3 + 34s_{14}g_3 + 29s_{15}g_3 \ge 21.8 
+\end{align*}
+$$
+$$
+\begin{align*} 
+&\quad \ 12s_1g_4 + 15s_2g_4 + 32s_3g_4 + 7s_4g_4 + 9s_5g_4 \\
+&\quad + 10s_6g_4 + 23s_7g_4 + 27s_8g_4 + 7s_9g_4 + 27s_{10}g_4 \\
+&\quad + 32s_{11}g_4 + 38s_{12}g_4 + 25s_{13}g_4 + 34s_{14}g_4 + 29s_{15}g_4 \ge 21.8 
+\end{align*}
+$$
+
+$$
+\begin{align*} 
+&\quad \ 12s_1g_5 + 15s_2g_5 + 32s_3g_5 + 7s_4g_5 + 9s_5g_5 \\
+&\quad + 10s_6g_5 + 23s_7g_5 + 27s_8g_5 + 7s_9g_5 + 27s_{10}g_5 \\
+&\quad + 32s_{11}g_5 + 38s_{12}g_5 + 25s_{13}g_5 + 34s_{14}g_5 + 29s_{15}g_5 \ge 21.8 
+\end{align*}
+$$
+
+
+and the non negativity of the decision variables. That is 
+
+$$s_ig_j  \ge 0$$ where i is number of student from (1 to 15) and j is number of groups from (1 to 5).
+
+---
+
+**Integer Programming**
+
+After the successful formulation of the problem we will be solving it using the integer programming. 
+
+Now, using integer programming to solve it. 
+```{r}
+library(lpSolve)
+library(knitr)
+library(kableExtra)
+
+
+#coefficient of objective function.
+coeff_of_obj <- c(4.748, 4.748, 4.748, 4.748, 4.748,	
+                  8.748, 8.748, 8.748, 8.748, 8.748,	
+                  9.692, 9.692, 9.692, 9.692, 9.692,	
+                  4.062, 4.062, 4.062, 4.062, 4.062,
+                  5.528, 5.528, 5.528, 5.528, 5.528,	
+                  4.454, 4.454, 4.454, 4.454, 4.454,	
+                  8.236, 8.236,  8.236,  8.236,  8.236,	
+                  9.268, 9.268, 9.268, 9.268, 9.268,
+                  6.860, 6.860, 6.860, 6.860, 6.860,
+                  7.746,  7.746,  7.746,  7.746,  7.746,
+                  11.346, 11.346, 11.346, 11.346, 11.346,
+                  12.546, 12.546, 12.546, 12.546, 12.546,
+                  9.016,  9.016,  9.016,  9.016,  9.016,
+                  9.890, 9.890, 9.890, 9.890, 9.890,
+                  11.126, 11.126, 11.126, 11.126, 11.126)
+
+#coefficient of constatints.
+coeff_of_con <- matrix(c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                         0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0,
+                         0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0,
+                         0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0,
+                         0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+                         1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+                         2.58, 0, 0, 0, 0, 3.58, 0, 0, 0, 0, 2.82, 0, 0, 0, 0, 3.77, 0, 0, 0, 0, 3.88, 0, 0, 0, 0, 2.09, 0, 0, 0, 0, 3.06, 0, 0, 0, 0, 3.78, 0, 0, 0, 0, 3.1, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.91, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.36, 0, 0, 0, 0, 3.15, 0, 0, 0, 0, 2.21, 0, 0, 0, 0,
+                         0, 2.58, 0, 0, 0, 0, 3.58, 0, 0, 0, 0, 2.82, 0, 0, 0, 0, 3.77, 0, 0, 0, 0, 3.88, 0, 0, 0, 0, 2.09, 0, 0, 0, 0, 3.06, 0, 0, 0, 0, 3.78, 0, 0, 0, 0, 3.1, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.91, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.36, 0, 0, 0, 0, 3.15, 0, 0, 0, 0, 2.21, 0, 0, 0,
+                         0, 0, 2.58, 0, 0, 0, 0, 3.58, 0, 0, 0, 0, 2.82, 0, 0, 0, 0, 3.77, 0, 0, 0, 0, 3.88, 0, 0, 0, 0, 2.09, 0, 0, 0, 0, 3.06, 0, 0, 0, 0, 3.78, 0, 0, 0, 0, 3.1, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.91, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.36, 0, 0, 0, 0, 3.15, 0, 0, 0, 0, 2.21, 0, 0,
+                         0, 0, 0, 2.58, 0, 0, 0, 0, 3.58, 0, 0, 0, 0, 2.82, 0, 0, 0, 0, 3.77, 0, 0, 0, 0, 3.88, 0, 0, 0, 0, 2.09, 0, 0, 0, 0, 3.06, 0, 0, 0, 0, 3.78, 0, 0, 0, 0, 3.1, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.91, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.36, 0, 0, 0, 0, 3.15, 0, 0, 0, 0, 2.21, 0,
+                         0, 0, 0, 0, 2.58, 0, 0, 0, 0, 3.58, 0, 0, 0, 0, 2.82, 0, 0, 0, 0, 3.77, 0, 0, 0, 0, 3.88, 0, 0, 0, 0, 2.09, 0, 0, 0, 0, 3.06, 0, 0, 0, 0, 3.78, 0, 0, 0, 0, 3.1, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.91, 0, 0, 0, 0, 2.91, 0, 0, 0, 0, 3.36, 0, 0, 0, 0, 3.15, 0, 0, 0, 0, 2.21,
+                         4, 0, 0, 0, 0, 18, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 0, 0, 9, 0, 0, 0, 0, 8, 0, 0, 0, 0, 18, 0, 0, 0, 0, 3, 0, 0, 0, 0, 13, 0, 0, 0, 0, 16, 0, 0, 0, 0, 10, 0, 0, 0, 0, 6, 0, 0, 0, 0, 20, 0, 0, 0, 0,
+                         0, 4, 0, 0, 0, 0, 18, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 0, 0, 9, 0, 0, 0, 0, 8, 0, 0, 0, 0, 18, 0, 0, 0, 0, 3, 0, 0, 0, 0, 13, 0, 0, 0, 0, 16, 0, 0, 0, 0, 10, 0, 0, 0, 0, 6, 0, 0, 0, 0, 20, 0, 0, 0,
+                         0, 0, 4, 0, 0, 0, 0, 18, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 0, 0, 9, 0, 0, 0, 0, 8, 0, 0, 0, 0, 18, 0, 0, 0, 0, 3, 0, 0, 0, 0, 13, 0, 0, 0, 0, 16, 0, 0, 0, 0, 10, 0, 0, 0, 0, 6, 0, 0, 0, 0, 20, 0, 0,
+                         0, 0, 0, 4, 0, 0, 0, 0, 18, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 0, 0, 9, 0, 0, 0, 0, 8, 0, 0, 0, 0, 18, 0, 0, 0, 0, 3, 0, 0, 0, 0, 13, 0, 0, 0, 0, 16, 0, 0, 0, 0, 10, 0, 0, 0, 0, 6, 0, 0, 0, 0, 20, 0,
+                         0, 0, 0, 0, 4, 0, 0, 0, 0, 18, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 0, 0, 9, 0, 0, 0, 0, 8, 0, 0, 0, 0, 18, 0, 0, 0, 0, 3, 0, 0, 0, 0, 13, 0, 0, 0, 0, 16, 0, 0, 0, 0, 10, 0, 0, 0, 0, 6, 0, 0, 0, 0, 20,
+                         12, 0, 0, 0, 0, 15, 0, 0, 0, 0, 32, 0, 0, 0, 0, 7, 0, 0, 0, 0, 9, 0, 0, 0, 0, 10, 0, 0, 0, 0, 23, 0, 0, 0, 0, 27, 0, 0, 0, 0, 7, 0, 0, 0, 0, 27, 0, 0, 0, 0, 32, 0, 0, 0, 0, 38, 0, 0, 0, 0, 25, 0, 0, 0, 0, 34, 0, 0, 0, 0, 29, 0, 0, 0, 0,
+                         0, 12, 0, 0, 0, 0, 15, 0, 0, 0, 0, 32, 0, 0, 0, 0, 7, 0, 0, 0, 0, 9, 0, 0, 0, 0, 10, 0, 0, 0, 0, 23, 0, 0, 0, 0, 27, 0, 0, 0, 0, 7, 0, 0, 0, 0, 27, 0, 0, 0, 0, 32, 0, 0, 0, 0, 38, 0, 0, 0, 0, 25, 0, 0, 0, 0, 34, 0, 0, 0, 0, 29, 0, 0, 0,
+                         0, 0, 12, 0, 0, 0, 0, 15, 0, 0, 0, 0, 32, 0, 0, 0, 0, 7, 0, 0, 0, 0, 9, 0, 0, 0, 0, 10, 0, 0, 0, 0, 23, 0, 0, 0, 0, 27, 0, 0, 0, 0, 7, 0, 0, 0, 0, 27, 0, 0, 0, 0, 32, 0, 0, 0, 0, 38, 0, 0, 0, 0, 25, 0, 0, 0, 0, 34, 0, 0, 0, 0, 29, 0, 0,
+                         0, 0, 0, 12, 0, 0, 0, 0, 15, 0, 0, 0, 0, 32, 0, 0, 0, 0, 7, 0, 0, 0, 0, 9, 0, 0, 0, 0, 10, 0, 0, 0, 0, 23, 0, 0, 0, 0, 27, 0, 0, 0, 0, 7, 0, 0, 0, 0, 27, 0, 0, 0, 0, 32, 0, 0, 0, 0, 38, 0, 0, 0, 0, 25, 0, 0, 0, 0, 34, 0, 0, 0, 0, 29, 0,
+                         0, 0, 0, 0, 12, 0, 0, 0, 0, 15, 0, 0, 0, 0, 32, 0, 0, 0, 0, 7, 0, 0, 0, 0, 9, 0, 0, 0, 0, 10, 0, 0, 0, 0, 23, 0, 0, 0, 0, 27, 0, 0, 0, 0, 7, 0, 0, 0, 0, 27, 0, 0, 0, 0, 32, 0, 0, 0, 0, 38, 0, 0, 0, 0, 25, 0, 0, 0, 0, 34, 0, 0, 0, 0, 29
+                         ), nrow = 35, byrow = TRUE)
+
+dir <- c("=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", "=", ">=",">=",">=",">=",">=",">=",">=",">=",">=",">=",">=",">=",">=",">=",">=" )
+
+rhs_of_con <- c(3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3.141, 3.141, 3.141, 3.141, 3.141, 9.867, 9.867, 9.867, 9.867, 9.867, 21.8, 21.8, 21.8, 21.8, 21.8)
+
+
+#using integer programming. 
+var_types <- rep(0, length(coeff_of_obj))
+
+lp_result <- lp("max", coeff_of_obj, coeff_of_con, dir, rhs_of_con, all.int = TRUE, int.vec = var_types)
+
+cat("The optimal value of our objective function is:", lp_result$objval, "\n")
+
+lp_result$solution
+```
+
+
+Now displaying each decision variable's corresponding value. It is important here to note that we have got a total of fifteen, one's and sixty, zero's. 
+```{r}
+# Creating decision variable names dynamically.
+num_students <- 15
+num_groups <- 5
+
+decision_var_names <- character(length = length(lp_result$solution))
+
+k <- 1
+for (i in 1:num_students) {
+  for (j in 1:num_groups) {
+    decision_var_names[k] <- paste("s", i, "g", j, sep = "")
+    k <- k + 1
+  }
+}
+
+# Combining the variable names with their values.
+decision_var_values <- data.frame(variable = decision_var_names, value = lp_result$solution)
+
+# Printing the values of decision variables.
+print(decision_var_values)
+
+```
+
+Since we have a large number of decision variables. We will filter and sort decision variables.
+```{r}
+# Filtering and sorting decision variables where value is equal to 1.
+filtered_decision_vars <- decision_var_values[decision_var_values$value == 1, ]
+sorted_decision_vars <- filtered_decision_vars[order(filtered_decision_vars$variable), ]
+
+# Print the values of decision variables
+print(sorted_decision_vars)
+```
+
+To print the result obtained in group wise manner. We will be using the following function.
+```{r}
+# Extracting group information from variable names.
+group_info <- gsub("s\\d+g(\\d+)", "\\1", filtered_decision_vars$variable)
+filtered_decision_vars$group <- as.numeric(group_info)
+
+# Sorting decision variables by group.
+sorted_decision_vars <- filtered_decision_vars[order(filtered_decision_vars$group, filtered_decision_vars$variable), ]
+
+# Printing the values of decision variables.
+print(sorted_decision_vars[, c("variable", "value")])
+```
+
+---
