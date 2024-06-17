@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ---
 
-##### Group Project By: Arvind Kumar Chaurasia, Thuy Thien Tram Nguyen, and Melona Vinolia Abel
+##### Group Project By: Arvind Kumar Chaurasia
 
 ---
 
